@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"compress/gzip"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"

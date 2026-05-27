@@ -14,8 +14,11 @@ import (
 	"goapi/backend/internal/config"
 	"goapi/backend/internal/database"
 	"goapi/backend/internal/handler"
+	"goapi/backend/internal/mailer"
 	"goapi/backend/internal/repository"
 	"goapi/backend/internal/security"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -80,20 +83,6 @@ func main() {
 	}()
 
 	<-ctx.Done()
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("shutdown", "error", err)
-		os.Exit(1)
-	}
-
-	logger.Info("api stopped")
-}
-ogger.Info("api stopped")
-}
-
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

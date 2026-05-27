@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
+	"goapi/backend/internal/mailer"
 	"goapi/backend/internal/model"
 	"goapi/backend/internal/repository"
 	"goapi/backend/internal/security"
-	"goapi/backend/internal/mailer"
 )
 
 var (
@@ -24,9 +26,9 @@ type Services struct {
 	Items *ItemService
 }
 
-func NewServices(users *repository.UserRepository, items *repository.ItemRepository, passwords *security.PasswordHasher, tokens *security.TokenService) *Services {
+func NewServices(users *repository.UserRepository, items *repository.ItemRepository, passwords *security.PasswordHasher, tokens *security.TokenService, rdb *redis.Client, mail *mailer.Mailer) *Services {
 	return &Services{
-		Auth:  NewAuthService(users, passwords, tokens),
+		Auth:  NewAuthService(users, passwords, tokens, rdb, mail),
 		Items: NewItemService(items),
 	}
 }
@@ -35,6 +37,8 @@ type AuthService struct {
 	users     *repository.UserRepository
 	passwords *security.PasswordHasher
 	tokens    *security.TokenService
+	redis     *redis.Client
+	mail      *mailer.Mailer
 }
 
 type AuthResult struct {
@@ -43,8 +47,8 @@ type AuthResult struct {
 	ExpiresAt time.Time  `json:"expires_at"`
 }
 
-func NewAuthService(users *repository.UserRepository, passwords *security.PasswordHasher, tokens *security.TokenService, rdb *redis.Client) *AuthService {
-	return &AuthService{users: users, passwords: passwords, tokens: tokens, redis: rdb}
+func NewAuthService(users *repository.UserRepository, passwords *security.PasswordHasher, tokens *security.TokenService, rdb *redis.Client, mail *mailer.Mailer) *AuthService {
+	return &AuthService{users: users, passwords: passwords, tokens: tokens, redis: rdb, mail: mail}
 }
 
 func (s *AuthService) Register(ctx context.Context, name, email, password string) (AuthResult, error) {
@@ -167,12 +171,4 @@ func (s *ItemService) List(ctx context.Context, userID string, limit int32) ([]m
 func validEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
-}
-turn err == nil
-}
-mail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
-}
-turn err == nil
 }
