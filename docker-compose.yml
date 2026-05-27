@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: goapi
+      POSTGRES_USER: goapi
+      POSTGRES_PASSWORD: goapi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goapi -d goapi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+  api:
+    build: ./backend
+    environment:
+      APP_ENV: production
+      HTTP_ADDR: :8080
+      DATABASE_URL: postgres://goapi:goapi@postgres:5432/goapi?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: change-me-use-a-long-random-secret
+      JWT_TTL: 24h
+      BCRYPT_COST: 12
+      DB_MAX_CONNS: 40
+      DB_MIN_CONNS: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
