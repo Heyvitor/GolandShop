@@ -39,12 +39,26 @@ func main() {
 	}
 	defer db.Close()
 
+	opt, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		logger.Error("parse redis url", "error", err)
+		os.Exit(1)
+	}
+	rdb := redis.NewClient(opt)
+	defer rdb.Close()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		logger.Error("ping redis", "error", err)
+		os.Exit(1)
+	}
+
+	mail := mailer.New(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.From)
+
 	userRepo := repository.NewUserRepository(db)
 	itemRepo := repository.NewItemRepository(db)
 	passwords := security.NewPasswordHasher(cfg.Security.BcryptCost)
 	tokens := security.NewTokenService(cfg.Security.JWTSecret, cfg.Security.JWTTTL)
 
-	services := app.NewServices(userRepo, itemRepo, passwords, tokens, rdb)
+	services := app.NewServices(userRepo, itemRepo, passwords, tokens, rdb, mail)
 	router := handler.NewRouter(services, tokens, logger)
 
 	server := &http.Server{

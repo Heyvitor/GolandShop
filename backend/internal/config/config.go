@@ -46,6 +46,13 @@ func Load() (Config, error) {
 			JWTTTL:     jwtTTL,
 			BcryptCost: getenvInt("BCRYPT_COST", 12),
 		},
+		SMTP: SMTPConfig{
+			Host:     getenv("SMTP_HOST", "smtp.mailtrap.io"),
+			Port:     getenvInt("SMTP_PORT", 2525),
+			Username: getenv("SMTP_USERNAME", ""),
+			Password: getenv("SMTP_PASSWORD", ""),
+			From:     getenv("SMTP_FROM", "noreply@goapi.com"),
+		},
 	}
 
 	if cfg.Database.URL == "" {

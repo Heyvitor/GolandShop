@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: goapi
       POSTGRES_USER: goapi
       POSTGRES_PASSWORD: goapi
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
@@ -31,6 +33,11 @@ services:
       BCRYPT_COST: 12
       DB_MAX_CONNS: 40
       DB_MIN_CONNS: 5
+      SMTP_HOST: smtp.mailtrap.io
+      SMTP_PORT: 2525
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: noreply@goapi.com
     depends_on:
       postgres:
         condition: service_healthy

@@ -10,6 +10,7 @@ import (
 	"goapi/backend/internal/model"
 	"goapi/backend/internal/repository"
 	"goapi/backend/internal/security"
+	"goapi/backend/internal/mailer"
 )
 
 var (
@@ -71,6 +72,11 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 	if err != nil {
 		return AuthResult{}, err
 	}
+
+	// Dispara o e-mail de boas-vindas assincronamente (em background)
+	go func() {
+		_ = s.mail.SendWelcomeEmail(user.Email, user.Name)
+	}()
 
 	return AuthResult{User: user, Token: token, ExpiresAt: expiresAt}, nil
 }
@@ -159,6 +165,12 @@ func (s *ItemService) List(ctx context.Context, userID string, limit int32) ([]m
 }
 
 func validEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
+}
+turn err == nil
+}
+mail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil
 }
