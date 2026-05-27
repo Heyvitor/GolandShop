@@ -11,7 +11,17 @@ type Config struct {
 	AppEnv   string
 	HTTPAddr string
 	Database DatabaseConfig
+	RedisURL string
 	Security SecurityConfig
+	SMTP     SMTPConfig
+}
+
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
 }
 
 type DatabaseConfig struct {
