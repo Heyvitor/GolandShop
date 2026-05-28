@@ -20,7 +20,7 @@ type User struct {
 
 type Store struct {
 	ID        string    `json:"id"`
-	OwnerID   string    `json:"owner_id"`
+	OwnerID   string    `json:"-"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	CreatedAt time.Time `json:"created_at"`
@@ -28,12 +28,17 @@ type Store struct {
 }
 
 type Item struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Title     string    `json:"title"`
-	Body      string    `json:"body"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           string    `json:"id"`
+	UserID       string    `json:"user_id,omitempty"`
+	StoreID      string    `json:"store_id"`
+	Name         string    `json:"name"`
+	Description  string    `json:"description"`
+	Price        float64   `json:"price"`
+	Variant      string    `json:"variant"`
+	VariantPrice float64   `json:"variant_price"`
+	ShippingType string    `json:"shipping_type"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type Order struct {

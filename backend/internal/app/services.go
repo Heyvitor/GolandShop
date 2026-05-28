@@ -193,15 +193,25 @@ func NewItemService(items *repository.ItemRepository) *ItemService {
 	return &ItemService{items: items}
 }
 
-func (s *ItemService) Create(ctx context.Context, userID, title, body string) (model.Item, error) {
-	title = strings.TrimSpace(title)
-	body = strings.TrimSpace(body)
+func (s *ItemService) Create(ctx context.Context, item model.Item) (model.Item, error) {
+	item.UserID = strings.TrimSpace(item.UserID)
+	item.StoreID = strings.TrimSpace(item.StoreID)
+	item.Name = strings.TrimSpace(item.Name)
+	item.Description = strings.TrimSpace(item.Description)
+	item.Variant = strings.TrimSpace(item.Variant)
+	item.ShippingType = strings.TrimSpace(item.ShippingType)
 
-	if userID == "" || title == "" || len(title) > 160 || len(body) > 5000 {
+	if item.UserID == "" || item.StoreID == "" || item.Name == "" || len(item.Name) > 160 || len(item.Description) > 5000 {
+		return model.Item{}, ErrInvalidInput
+	}
+	if item.Price < 0 || item.VariantPrice < 0 {
+		return model.Item{}, ErrInvalidInput
+	}
+	if item.ShippingType != "free" && item.ShippingType != "consult" {
 		return model.Item{}, ErrInvalidInput
 	}
 
-	return s.items.Create(ctx, userID, title, body)
+	return s.items.Create(ctx, item)
 }
 
 func (s *ItemService) List(ctx context.Context, userID string, limit int32) ([]model.Item, error) {

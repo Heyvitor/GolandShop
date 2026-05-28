@@ -6,11 +6,17 @@ import (
 	"strconv"
 
 	"goapi/backend/internal/app"
+	"goapi/backend/internal/model"
 )
 
 type createItemRequest struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	StoreID      string  `json:"store_id"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Price        float64 `json:"price"`
+	Variant      string  `json:"variant"`
+	VariantPrice float64 `json:"variant_price"`
+	ShippingType string  `json:"shipping_type"`
 }
 
 func (api *API) createItem(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +26,16 @@ func (api *API) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := api.services.Items.Create(r.Context(), userIDFromContext(r.Context()), req.Title, req.Body)
+	item, err := api.services.Items.Create(r.Context(), model.Item{
+		UserID:       userIDFromContext(r.Context()),
+		StoreID:      req.StoreID,
+		Name:         req.Name,
+		Description:  req.Description,
+		Price:        req.Price,
+		Variant:      req.Variant,
+		VariantPrice: req.VariantPrice,
+		ShippingType: req.ShippingType,
+	})
 	if errors.Is(err, app.ErrInvalidInput) {
 		writeError(w, http.StatusBadRequest, "invalid_input")
 		return

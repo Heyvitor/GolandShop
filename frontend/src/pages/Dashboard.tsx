@@ -3,6 +3,23 @@ import { useLocation } from 'wouter';
 import { fetchApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
+type Store = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Product = {
+  id: string;
+  store_id: string;
+  name: string;
+  description: string;
+  price: number;
+  variant: string;
+  variant_price: number;
+  shipping_type: 'free' | 'consult';
+};
+
 export default function Dashboard() {
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
@@ -54,26 +71,76 @@ function AdminPanel({ user, logout }: any) {
 /* PAINEL VENDEDOR (LOJA)                                                     */
 /* -------------------------------------------------------------------------- */
 function StorePanel({ user, logout }: any) {
-  const [store, setStore] = useState<any>(null);
+  const [store, setStore] = useState<Store | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [productLoading, setProductLoading] = useState(false);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productName, setProductName] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [variant, setVariant] = useState('');
+  const [variantPrice, setVariantPrice] = useState('');
+  const [shippingType, setShippingType] = useState<'free' | 'consult'>('consult');
 
   useEffect(() => {
-    fetchApi('/stores/mine')
+    fetchApi<Store>('/stores/mine')
       .then(setStore)
       .catch(() => setStore(null))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!store) return;
+
+    setProductLoading(true);
+    fetchApi<{ items: Product[] }>('/items')
+      .then((data) => setProducts(data.items.filter((item) => item.store_id === store.id)))
+      .catch(() => setProducts([]))
+      .finally(() => setProductLoading(false));
+  }, [store]);
+
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const newStore = await fetchApi<any>('/stores', {
+      const newStore = await fetchApi<Store>('/stores', {
         method: 'POST',
         body: JSON.stringify({ name, slug })
       });
       setStore(newStore);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!store) return;
+
+    try {
+      const newProduct = await fetchApi<Product>('/items', {
+        method: 'POST',
+        body: JSON.stringify({
+          store_id: store.id,
+          name: productName,
+          description,
+          price: Number(price),
+          variant,
+          variant_price: Number(variantPrice || '0'),
+          shipping_type: shippingType
+        })
+      });
+
+      setProducts((current) => [newProduct, ...current]);
+      setProductName('');
+      setDescription('');
+      setPrice('');
+      setVariant('');
+      setVariantPrice('');
+      setShippingType('consult');
+      setShowProductForm(false);
     } catch (err: any) {
       alert(err.message);
     }
@@ -115,9 +182,87 @@ function StorePanel({ user, logout }: any) {
           <div className="card">
             <h3>{store.name}</h3>
             <p className="text-muted">Slug: /{store.slug}</p>
-            <div className="mt-6">
-              <button className="btn-primary">Gerenciar Produtos</button>
+            <div className="mt-6 flex gap-4">
+              <button className="btn-primary" onClick={() => setShowProductForm((value) => !value)}>
+                {showProductForm ? 'Fechar Cadastro' : 'Gerenciar Produtos'}
+              </button>
             </div>
+          </div>
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3>Produtos</h3>
+                <p className="text-muted">Cadastre nome, descricao, valor, variante e frete.</p>
+              </div>
+              <strong>{products.length}</strong>
+            </div>
+
+            {showProductForm && (
+              <form onSubmit={handleCreateProduct} className="flex flex-col gap-4 mb-6">
+                <div className="form-group">
+                  <label>Nome do produto</label>
+                  <input required value={productName} onChange={e => setProductName(e.target.value)} placeholder="Ex: Camiseta Premium" />
+                </div>
+                <div className="form-group">
+                  <label>Descricao</label>
+                  <textarea
+                    required
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder="Detalhes, material, medidas, beneficios"
+                  />
+                </div>
+                <div className="product-form-grid">
+                  <div className="form-group">
+                    <label>Valor</label>
+                    <input required type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} placeholder="99.90" />
+                  </div>
+                  <div className="form-group">
+                    <label>Variante</label>
+                    <input value={variant} onChange={e => setVariant(e.target.value)} placeholder="Ex: Tamanho P / Vermelho" />
+                  </div>
+                  <div className="form-group">
+                    <label>Valor da variante</label>
+                    <input type="number" min="0" step="0.01" value={variantPrice} onChange={e => setVariantPrice(e.target.value)} placeholder="0.00" />
+                  </div>
+                  <div className="form-group">
+                    <label>Frete</label>
+                    <select value={shippingType} onChange={e => setShippingType(e.target.value as 'free' | 'consult')}>
+                      <option value="consult">A consultar</option>
+                      <option value="free">Frete gratuito</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary">Cadastrar produto</button>
+              </form>
+            )}
+
+            {productLoading ? (
+              <p className="text-muted">Carregando produtos...</p>
+            ) : products.length === 0 ? (
+              <p className="text-muted">Nenhum produto cadastrado ainda.</p>
+            ) : (
+              <div className="product-list">
+                {products.map((product) => (
+                  <div key={product.id} className="product-row">
+                    <div>
+                      <h4>{product.name}</h4>
+                      <p className="text-muted">{product.description}</p>
+                    </div>
+                    <div className="product-meta">
+                      <strong>R$ {product.price.toFixed(2)}</strong>
+                      <span className="text-muted">{product.variant || 'Sem variante'}</span>
+                      <span className="text-muted">
+                        {product.variant_price > 0 ? `Variante: R$ ${product.variant_price.toFixed(2)}` : 'Variante sem acrescimo'}
+                      </span>
+                      <span className="text-muted">
+                        {product.shipping_type === 'free' ? 'Frete gratuito' : 'Frete a consultar'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
