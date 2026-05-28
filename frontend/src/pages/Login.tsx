@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { fetchApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      setLocation('/');
+    }
+  }, [user, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +79,7 @@ export default function Login() {
 
         <div className="mt-6 text-center text-sm">
           <p className="text-muted">
-            Não tem uma conta ainda? <Link href="/register" className="font-bold" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Cadastre-se gratuitamente</Link>
+            Não tem uma conta ainda? <Link href="/auth/register" className="font-bold" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Cadastre-se gratuitamente</Link>
           </p>
         </div>
       </div>

@@ -87,7 +87,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password, role 
 		return AuthResult{}, err
 	}
 
-	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role)
+	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role, user.Email, user.Name)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -117,7 +117,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (AuthRe
 		return AuthResult{}, ErrInvalidCredentials
 	}
 
-	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role)
+	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role, user.Email, user.Name)
 	if err != nil {
 		return AuthResult{}, err
 	}

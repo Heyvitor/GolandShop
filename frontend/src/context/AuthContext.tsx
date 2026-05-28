@@ -25,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Tenta restaurar a sessão ao carregar a página
   useEffect(() => {
     async function restoreSession() {
+      // Se já estivermos na página de login ou registro, não precisamos "bloquear"
+      // Mas ainda é bom checar caso o usuário já esteja logado para redirecionar.
       try {
         const data = await fetchApi<User>('/auth/me');
         setUser(data);
@@ -34,6 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     }
+    
+    // Pequena otimização: se for rota pública de loja (ex: /loja01), 
+    // ou rota de auth, poderíamos pular, mas o 'me' é rápido.
+    // O problema do usuário é que ele "pede" o /me mesmo sem estar logado.
+    // Isso é normal para checar sessão, mas vamos garantir que não quebre nada.
     restoreSession();
   }, []);
 

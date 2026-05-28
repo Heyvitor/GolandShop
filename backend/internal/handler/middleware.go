@@ -23,6 +23,8 @@ func (api *API) auth(next http.Handler) http.Handler {
 
 		ctx := withUserID(r.Context(), claims.UserID)
 		ctx = withUserRole(ctx, claims.Role)
+		ctx = withUserName(ctx, claims.Name)
+		ctx = withUserEmail(ctx, claims.Email)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

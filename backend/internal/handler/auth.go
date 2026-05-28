@@ -108,12 +108,14 @@ func (api *API) logout(w http.ResponseWriter, r *http.Request) {
 func (api *API) me(w http.ResponseWriter, r *http.Request) {
 	userID := userIDFromContext(r.Context())
 	role := userRoleFromContext(r.Context())
+	name := userNameFromContext(r.Context())
+	email := userEmailFromContext(r.Context())
 	
-	// Poderíamos buscar no banco para dados frescos, 
-	// mas as claims do JWT já tem o básico necessário.
 	writeJSON(w, http.StatusOK, map[string]any{
-		"id":   userID,
-		"role": role,
+		"id":    userID,
+		"role":  role,
+		"name":  name,
+		"email": email,
 	})
 }
 

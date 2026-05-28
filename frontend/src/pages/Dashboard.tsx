@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   if (loading) return <div className="container">Carregando painel...</div>;
   if (!user) {
-    setLocation('/login');
+    setLocation('/auth/login');
     return null;
   }
 

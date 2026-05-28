@@ -12,6 +12,8 @@ type contextKey string
 const (
 	userIDKey    contextKey = "user_id"
 	userRoleKey  contextKey = "user_role"
+	userNameKey  contextKey = "user_name"
+	userEmailKey contextKey = "user_email"
 	requestIDKey contextKey = "request_id"
 )
 
@@ -31,6 +33,24 @@ func withUserRole(ctx context.Context, role string) context.Context {
 func userRoleFromContext(ctx context.Context) string {
 	role, _ := ctx.Value(userRoleKey).(string)
 	return role
+}
+
+func withUserName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, userNameKey, name)
+}
+
+func userNameFromContext(ctx context.Context) string {
+	name, _ := ctx.Value(userNameKey).(string)
+	return name
+}
+
+func withUserEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, userEmailKey, email)
+}
+
+func userEmailFromContext(ctx context.Context) string {
+	email, _ := ctx.Value(userEmailKey).(string)
+	return email
 }
 
 func requestID(next http.Handler) http.Handler {
