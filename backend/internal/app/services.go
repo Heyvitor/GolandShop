@@ -19,17 +19,28 @@ var (
 	ErrInvalidInput       = errors.New("invalid input")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrEmailAlreadyExists = errors.New("email already exists")
+	ErrUnauthorized       = errors.New("unauthorized")
 )
 
 type Services struct {
-	Auth  *AuthService
-	Items *ItemService
+	Auth   *AuthService
+	Items  *ItemService
+	Stores *StoreService
 }
 
-func NewServices(users *repository.UserRepository, items *repository.ItemRepository, passwords *security.PasswordHasher, tokens *security.TokenService, rdb *redis.Client, mail *mailer.Mailer) *Services {
+func NewServices(
+	users *repository.UserRepository,
+	items *repository.ItemRepository,
+	stores *repository.StoreRepository,
+	passwords *security.PasswordHasher,
+	tokens *security.TokenService,
+	rdb *redis.Client,
+	mail *mailer.Mailer,
+) *Services {
 	return &Services{
-		Auth:  NewAuthService(users, passwords, tokens, rdb, mail),
-		Items: NewItemService(items),
+		Auth:   NewAuthService(users, passwords, tokens, rdb, mail),
+		Items:  NewItemService(items),
+		Stores: NewStoreService(stores),
 	}
 }
 
@@ -51,9 +62,13 @@ func NewAuthService(users *repository.UserRepository, passwords *security.Passwo
 	return &AuthService{users: users, passwords: passwords, tokens: tokens, redis: rdb, mail: mail}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, email, password string) (AuthResult, error) {
+func (s *AuthService) Register(ctx context.Context, name, email, password, role string) (AuthResult, error) {
 	name = strings.TrimSpace(name)
 	email = strings.ToLower(strings.TrimSpace(email))
+
+	if role == "" {
+		role = model.RoleClient
+	}
 
 	if name == "" || len(password) < 8 || !validEmail(email) {
 		return AuthResult{}, ErrInvalidInput
@@ -64,7 +79,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 		return AuthResult{}, err
 	}
 
-	user, err := s.users.Create(ctx, name, email, hash)
+	user, err := s.users.Create(ctx, name, email, hash, role)
 	if errors.Is(err, repository.ErrDuplicateEmail) {
 		return AuthResult{}, ErrEmailAlreadyExists
 	}
@@ -72,7 +87,7 @@ func (s *AuthService) Register(ctx context.Context, name, email, password string
 		return AuthResult{}, err
 	}
 
-	token, expiresAt, err := s.tokens.Generate(user.ID)
+	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -102,12 +117,17 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (AuthRe
 		return AuthResult{}, ErrInvalidCredentials
 	}
 
-	token, expiresAt, err := s.tokens.Generate(user.ID)
+	token, expiresAt, err := s.tokens.Generate(user.ID, user.Role)
 	if err != nil {
 		return AuthResult{}, err
 	}
 
 	return AuthResult{User: user, Token: token, ExpiresAt: expiresAt}, nil
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, id string) (model.User, error) {
+	// Implementar se necessário buscar por ID, por enquanto usamos claims
+	return model.User{}, nil
 }
 
 func (s *AuthService) Logout(ctx context.Context, tokenID string, expiresAt time.Time) error {
@@ -128,7 +148,7 @@ func (s *AuthService) AllowRequest(ctx context.Context, ip string, maxReqs int64
 	
 	count, err := s.redis.Incr(ctx, key).Result()
 	if err != nil {
-		return false // On Redis failure, default to block or handle gracefully. Let's block to be safe.
+		return false
 	}
 	
 	if count == 1 {
@@ -136,6 +156,33 @@ func (s *AuthService) AllowRequest(ctx context.Context, ip string, maxReqs int64
 	}
 
 	return count <= maxReqs
+}
+
+type StoreService struct {
+	stores *repository.StoreRepository
+}
+
+func NewStoreService(stores *repository.StoreRepository) *StoreService {
+	return &StoreService{stores: stores}
+}
+
+func (s *StoreService) Create(ctx context.Context, ownerID, name, slug string) (model.Store, error) {
+	name = strings.TrimSpace(name)
+	slug = strings.ToLower(strings.TrimSpace(slug))
+
+	if ownerID == "" || name == "" || slug == "" {
+		return model.Store{}, ErrInvalidInput
+	}
+
+	return s.stores.Create(ctx, ownerID, name, slug)
+}
+
+func (s *StoreService) GetBySlug(ctx context.Context, slug string) (model.Store, error) {
+	return s.stores.FindBySlug(ctx, slug)
+}
+
+func (s *StoreService) GetByOwner(ctx context.Context, ownerID string) (model.Store, error) {
+	return s.stores.FindByOwner(ctx, ownerID)
 }
 
 type ItemService struct {

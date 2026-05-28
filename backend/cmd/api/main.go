@@ -58,10 +58,11 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	itemRepo := repository.NewItemRepository(db)
+	storeRepo := repository.NewStoreRepository(db)
 	passwords := security.NewPasswordHasher(cfg.Security.BcryptCost)
 	tokens := security.NewTokenService(cfg.Security.JWTSecret, cfg.Security.JWTTTL)
 
-	services := app.NewServices(userRepo, itemRepo, passwords, tokens, rdb, mail)
+	services := app.NewServices(userRepo, itemRepo, storeRepo, passwords, tokens, rdb, mail)
 	router := handler.NewRouter(services, tokens, logger)
 
 	server := &http.Server{

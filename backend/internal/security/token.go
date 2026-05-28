@@ -15,6 +15,7 @@ type TokenService struct {
 
 type Claims struct {
 	UserID string `json:"user_id"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -25,13 +26,14 @@ func NewTokenService(secret string, ttl time.Duration) *TokenService {
 	}
 }
 
-func (s *TokenService) Generate(userID string) (string, time.Time, error) {
+func (s *TokenService) Generate(userID, role string) (string, time.Time, error) {
 	now := time.Now().UTC()
 	expiresAt := now.Add(s.ttl)
 	tokenID := uuid.NewString()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        tokenID,
 			Subject:   userID,

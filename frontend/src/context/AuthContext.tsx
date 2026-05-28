@@ -1,10 +1,12 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { fetchApi } from '../lib/api';
 
 type User = {
   id: string;
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
+  role: string;
 };
 
 type AuthContextType = {
@@ -17,13 +19,34 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Since we rely on HttpOnly cookies, we don't have the token in memory.
-  // We store the user info here when they login/register.
   const [user, setUser] = useState<User | null>(null);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Tenta restaurar a sessão ao carregar a página
+  useEffect(() => {
+    async function restoreSession() {
+      try {
+        const data = await fetchApi<User>('/auth/me');
+        setUser(data);
+      } catch (err) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    restoreSession();
+  }, []);
+
+  const login = (userData: User) => {
+    setUser(userData);
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login: setUser, logout: () => setUser(null) }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

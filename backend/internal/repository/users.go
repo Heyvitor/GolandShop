@@ -21,18 +21,19 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, name, email, passwordHash string) (model.User, error) {
+func (r *UserRepository) Create(ctx context.Context, name, email, passwordHash, role string) (model.User, error) {
 	const query = `
-		INSERT INTO users (name, email, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id::text, name, email, password_hash, created_at, updated_at`
+		INSERT INTO users (name, email, password_hash, role)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id::text, name, email, password_hash, role, created_at, updated_at`
 
 	var user model.User
-	err := r.db.QueryRow(ctx, query, name, email, passwordHash).Scan(
+	err := r.db.QueryRow(ctx, query, name, email, passwordHash, role).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -49,7 +50,7 @@ func (r *UserRepository) Create(ctx context.Context, name, email, passwordHash s
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (model.User, error) {
 	const query = `
-		SELECT id::text, name, email, password_hash, created_at, updated_at
+		SELECT id::text, name, email, password_hash, role, created_at, updated_at
 		FROM users
 		WHERE email = $1`
 
@@ -59,6 +60,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (model.U
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)

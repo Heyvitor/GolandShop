@@ -11,6 +11,7 @@ type contextKey string
 
 const (
 	userIDKey    contextKey = "user_id"
+	userRoleKey  contextKey = "user_role"
 	requestIDKey contextKey = "request_id"
 )
 
@@ -21,6 +22,15 @@ func withUserID(ctx context.Context, userID string) context.Context {
 func userIDFromContext(ctx context.Context) string {
 	userID, _ := ctx.Value(userIDKey).(string)
 	return userID
+}
+
+func withUserRole(ctx context.Context, role string) context.Context {
+	return context.WithValue(ctx, userRoleKey, role)
+}
+
+func userRoleFromContext(ctx context.Context) string {
+	role, _ := ctx.Value(userRoleKey).(string)
+	return role
 }
 
 func requestID(next http.Handler) http.Handler {

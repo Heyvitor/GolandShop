@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"goapi/backend/internal/app"
+	"goapi/backend/internal/model"
 	"goapi/backend/internal/security"
 )
 
@@ -20,14 +21,32 @@ func NewRouter(services *app.Services, tokens *security.TokenService, logger *sl
 		logger:   logger,
 	}
 
+	// Rotas Públicas
 	mux.HandleFunc("GET /healthz", api.health)
 	mux.HandleFunc("POST /api/v1/auth/register", api.register)
 	mux.HandleFunc("POST /api/v1/auth/login", api.login)
-	mux.HandleFunc("POST /api/v1/auth/logout", api.logout)
-	mux.Handle("POST /api/v1/items", api.auth(http.HandlerFunc(api.createItem)))
-	mux.Handle("GET /api/v1/items", api.auth(http.HandlerFunc(api.listItems)))
+	mux.HandleFunc("GET /api/v1/stores/view", api.getStore)
 
-	return recoverPanic(requestID(logging(securityHeaders(mux), logger)), logger)
+	// Rotas Protegidas (Logado)
+	authOnly := api.auth
+	mux.Handle("POST /api/v1/auth/logout", authOnly(http.HandlerFunc(api.logout)))
+	mux.Handle("GET /api/v1/auth/me", authOnly(http.HandlerFunc(api.me)))
+
+	// Rotas de Admin
+	adminOnly := api.requireRole(model.RoleAdmin)
+	mux.Handle("GET /api/v1/admin/stats", authOnly(adminOnly(http.HandlerFunc(api.health)))) // Exemplo
+
+	// Rotas de Usuário (Dono de Loja)
+	userOnly := api.requireRole(model.RoleUser, model.RoleAdmin)
+	mux.Handle("POST /api/v1/stores", authOnly(userOnly(http.HandlerFunc(api.createStore))))
+	mux.Handle("POST /api/v1/items", authOnly(userOnly(http.HandlerFunc(api.createItem))))
+	mux.Handle("GET /api/v1/items", authOnly(userOnly(http.HandlerFunc(api.listItems))))
+
+	// Rotas de Cliente
+	clientOnly := api.requireRole(model.RoleClient, model.RoleUser, model.RoleAdmin)
+	mux.Handle("GET /api/v1/orders/my", authOnly(clientOnly(http.HandlerFunc(api.listItems)))) // Exemplo
+
+	return gzipMiddleware(recoverPanic(requestID(logging(securityHeaders(mux), logger)), logger))
 }
 
 type API struct {

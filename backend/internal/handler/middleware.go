@@ -21,6 +21,32 @@ func (api *API) auth(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(withUserID(r.Context(), claims.UserID)))
+		ctx := withUserID(r.Context(), claims.UserID)
+		ctx = withUserRole(ctx, claims.Role)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (api *API) requireRole(roles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userRole := userRoleFromContext(r.Context())
+			
+			allowed := false
+			for _, role := range roles {
+				if userRole == role {
+					allowed = true
+					break
+				}
+			}
+
+			if !allowed {
+				writeError(w, http.StatusForbidden, "insufficient_permissions")
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

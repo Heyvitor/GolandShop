@@ -12,6 +12,7 @@ type registerRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 type loginRequest struct {
@@ -32,7 +33,7 @@ func (api *API) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := api.services.Auth.Register(r.Context(), req.Name, req.Email, req.Password)
+	result, err := api.services.Auth.Register(r.Context(), req.Name, req.Email, req.Password, req.Role)
 	if errors.Is(err, app.ErrInvalidInput) {
 		writeError(w, http.StatusBadRequest, "invalid_input")
 		return
@@ -102,5 +103,17 @@ func (api *API) logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	writeJSON(w, http.StatusOK, map[string]any{"message": "logged_out"})
+}
+
+func (api *API) me(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromContext(r.Context())
+	role := userRoleFromContext(r.Context())
+	
+	// Poderíamos buscar no banco para dados frescos, 
+	// mas as claims do JWT já tem o básico necessário.
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":   userID,
+		"role": role,
+	})
 }
 
