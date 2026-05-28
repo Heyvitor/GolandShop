@@ -37,11 +37,22 @@ func (api *API) createStore(w http.ResponseWriter, r *http.Request) {
 func (api *API) getStore(w http.ResponseWriter, r *http.Request) {
 	slug := r.URL.Query().Get("slug")
 	if slug == "" {
-		// Tentar buscar do contexto se for dono de loja logado? 
-		// Por enquanto via query
+		writeError(w, http.StatusBadRequest, "missing_slug")
+		return
 	}
 
 	store, err := api.services.Stores.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "store_not_found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, store)
+}
+
+func (api *API) getMyStore(w http.ResponseWriter, r *http.Request) {
+	userID := userIDFromContext(r.Context())
+	store, err := api.services.Stores.GetByOwner(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "store_not_found")
 		return

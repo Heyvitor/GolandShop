@@ -48,7 +48,8 @@ func (api *API) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, result)
+	api.setAuthCookie(w, result.Token, result.ExpiresAt)
+	writeJSON(w, http.StatusCreated, map[string]any{"user": result.User})
 }
 
 func (api *API) login(w http.ResponseWriter, r *http.Request) {
@@ -69,16 +70,7 @@ func (api *API) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    result.Token,
-		Path:     "/",
-		Expires:  result.ExpiresAt,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
-
+	api.setAuthCookie(w, result.Token, result.ExpiresAt)
 	writeJSON(w, http.StatusOK, map[string]any{"user": result.User})
 }
 
@@ -92,15 +84,7 @@ func (api *API) logout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
+	api.clearAuthCookie(w)
 
 	writeJSON(w, http.StatusOK, map[string]any{"message": "logged_out"})
 }
@@ -110,7 +94,7 @@ func (api *API) me(w http.ResponseWriter, r *http.Request) {
 	role := userRoleFromContext(r.Context())
 	name := userNameFromContext(r.Context())
 	email := userEmailFromContext(r.Context())
-	
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id":    userID,
 		"role":  role,
@@ -119,3 +103,26 @@ func (api *API) me(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (api *API) setAuthCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    token,
+		Path:     "/",
+		Expires:  expiresAt,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func (api *API) clearAuthCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+}

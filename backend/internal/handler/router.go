@@ -38,6 +38,7 @@ func NewRouter(services *app.Services, tokens *security.TokenService, logger *sl
 
 	// Rotas de Usuário (Dono de Loja)
 	userOnly := api.requireRole(model.RoleUser, model.RoleAdmin)
+	mux.Handle("GET /api/v1/stores/mine", authOnly(userOnly(http.HandlerFunc(api.getMyStore))))
 	mux.Handle("POST /api/v1/stores", authOnly(userOnly(http.HandlerFunc(api.createStore))))
 	mux.Handle("POST /api/v1/items", authOnly(userOnly(http.HandlerFunc(api.createItem))))
 	mux.Handle("GET /api/v1/items", authOnly(userOnly(http.HandlerFunc(api.listItems))))

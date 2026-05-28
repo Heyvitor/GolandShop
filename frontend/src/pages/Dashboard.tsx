@@ -60,7 +60,7 @@ function StorePanel({ user, logout }: any) {
   const [slug, setSlug] = useState('');
 
   useEffect(() => {
-    fetchApi('/stores/view?owner=true') // Endpoint fictício por enquanto
+    fetchApi('/stores/mine')
       .then(setStore)
       .catch(() => setStore(null))
       .finally(() => setLoading(false));

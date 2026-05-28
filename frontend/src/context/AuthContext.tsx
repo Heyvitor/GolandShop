@@ -13,7 +13,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,25 +22,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Tenta restaurar a sessão ao carregar a página
   useEffect(() => {
     async function restoreSession() {
-      // Se já estivermos na página de login ou registro, não precisamos "bloquear"
-      // Mas ainda é bom checar caso o usuário já esteja logado para redirecionar.
+      const pathname = window.location.pathname;
+      const isAuthRoute = pathname.startsWith('/auth/');
+      const isPublicStoreRoute = pathname !== '/' && !isAuthRoute;
+
+      if (isAuthRoute || isPublicStoreRoute) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await fetchApi<User>('/auth/me');
         setUser(data);
-      } catch (err) {
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);
       }
     }
-    
-    // Pequena otimização: se for rota pública de loja (ex: /loja01), 
-    // ou rota de auth, poderíamos pular, mas o 'me' é rápido.
-    // O problema do usuário é que ele "pede" o /me mesmo sem estar logado.
-    // Isso é normal para checar sessão, mas vamos garantir que não quebre nada.
+
     restoreSession();
   }, []);
 
@@ -48,8 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    try {
+      await fetchApi('/auth/logout', { method: 'POST' });
+    } catch {
+      // Mesmo com falha de rede, limpamos o estado local para evitar sessão presa.
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
