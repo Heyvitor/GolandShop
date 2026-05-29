@@ -26,6 +26,9 @@ func NewRouter(services *app.Services, tokens *security.TokenService, logger *sl
 	mux.HandleFunc("POST /api/v1/auth/register", api.register)
 	mux.HandleFunc("POST /api/v1/auth/login", api.login)
 	mux.HandleFunc("GET /api/v1/stores/view", api.getStore)
+	mux.HandleFunc("GET /api/v1/stores/view/{slug}", api.getStore)
+	mux.HandleFunc("GET /api/v1/stores/catalog", api.getStoreCatalog)
+	mux.HandleFunc("GET /api/v1/stores/catalog/{slug}", api.getStoreCatalog)
 
 	// Rotas Protegidas (Logado)
 	authOnly := api.auth

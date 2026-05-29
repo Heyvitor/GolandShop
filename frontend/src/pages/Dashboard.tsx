@@ -24,11 +24,13 @@ export default function Dashboard() {
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (loading) return <div className="container">Carregando painel...</div>;
-  if (!user) {
-    setLocation('/auth/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      setLocation('/auth/login');
+    }
+  }, [loading, user, setLocation]);
+
+  if (loading || !user) return <div className="page-skeleton" />;
 
   // Renderiza o painel baseado na Role do usuário
   switch (user.role) {

@@ -225,6 +225,17 @@ func (s *ItemService) List(ctx context.Context, userID string, limit int32) ([]m
 	return s.items.ListByUser(ctx, userID, limit)
 }
 
+func (s *ItemService) ListByStore(ctx context.Context, storeID string, limit int32) ([]model.Item, error) {
+	if storeID == "" {
+		return nil, ErrInvalidInput
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+
+	return s.items.ListByStore(ctx, storeID, limit)
+}
+
 func validEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil

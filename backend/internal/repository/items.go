@@ -99,3 +99,43 @@ func (r *ItemRepository) ListByUser(ctx context.Context, userID string, limit in
 
 	return items, nil
 }
+
+func (r *ItemRepository) ListByStore(ctx context.Context, storeID string, limit int32) ([]model.Item, error) {
+	const query = `
+		SELECT id::text, store_id::text, name, description, price, variant, variant_price, shipping_type, created_at, updated_at
+		FROM items
+		WHERE store_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2`
+
+	rows, err := r.db.Query(ctx, query, storeID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]model.Item, 0, limit)
+	for rows.Next() {
+		var item model.Item
+		if err := rows.Scan(
+			&item.ID,
+			&item.StoreID,
+			&item.Name,
+			&item.Description,
+			&item.Price,
+			&item.Variant,
+			&item.VariantPrice,
+			&item.ShippingType,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
